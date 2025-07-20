@@ -1,12 +1,41 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, BarChart, Bar, PieChart, Pie, Cell } from 'recharts';
 import { TrendingUp, TrendingDown, AlertTriangle, FileText, Smartphone, Shield, Home, Briefcase } from 'lucide-react';
+const STATES = [
+  "Andhra Pradesh", "Arunachal Pradesh", "Assam", "Bihar", "Chhattisgarh", "Goa", "Gujarat", "Haryana", "Himachal Pradesh", "Jharkhand", "Karnataka", "Kerala", "Madhya Pradesh", "Maharashtra", "Manipur", "Meghalaya", "Mizoram", "Nagaland", "Odisha", "Punjab", "Rajasthan", "Sikkim", "Tamil Nadu", "Telangana", "Tripura", "Uttar Pradesh", "Uttarakhand", "West Bengal", "Andaman and Nicobar Islands", "Chandigarh", "Dadra and Nagar Haveli and Daman and Diu", "Delhi", "Jammu and Kashmir", "Ladakh", "Lakshadweep", "Puducherry"
+];
+const CRIME_TYPES = [
+  { label: "Crime Against Women (2022)", value: "women" },
+  { label: "IPC Crimes (2020-2022)", value: "ipc" }
+];
 
 const TrendAnalysis = () => {
-  const [selectedTrend, setSelectedTrend] = useState('cyber');
+  const [selectedState, setSelectedState] = useState("");
+  const [selectedCrimeType, setSelectedCrimeType] = useState("women");
+  const [realData, setRealData] = useState<any[]>([]);
+  const [realLoading, setRealLoading] = useState(false);
+  const [realError, setRealError] = useState("");
+  useEffect(() => {
+    fetchRealData();
+  }, [selectedState, selectedCrimeType]);
+  const fetchRealData = async () => {
+    setRealLoading(true);
+    setRealError("");
+    try {
+      let url = `/stats?crime_type=${selectedCrimeType}`;
+      if (selectedState) url += `&state=${encodeURIComponent(selectedState)}`;
+      const res = await fetch(url);
+      const json = await res.json();
+      if (json.error) setRealError(json.error);
+      else setRealData(json.stats || []);
+    } catch (e: any) {
+      setRealError(e.message || "Failed to fetch data");
+    }
+    setRealLoading(false);
+  };
 
   const trendData = [
     { month: 'Jan', cyber: 156, gig_economy: 89, housing: 234, social_media: 167, climate: 45, healthcare: 123 },
@@ -99,7 +128,47 @@ const TrendAnalysis = () => {
 
   return (
     <div className="space-y-6">
-      {/* Critical Issues Alert */}
+      <div className="bg-[rgba(30,41,59,0.85)] backdrop-blur p-4 rounded-b-xl shadow-lg mb-6 border border-slate-700">
+        <h2 className="text-lg font-bold mb-2 text-slate-100">Explore Real Crime Data</h2>
+        <div className="flex flex-wrap gap-4 mb-2">
+          <select value={selectedState} onChange={e => setSelectedState(e.target.value)} className="border border-slate-700 bg-slate-800 text-slate-100 p-2 rounded focus:ring-2 focus:ring-blue-500">
+            <option value="">All States/UTs</option>
+            {STATES.map(s => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
+          <select value={selectedCrimeType} onChange={e => setSelectedCrimeType(e.target.value)} className="border border-slate-700 bg-slate-800 text-slate-100 p-2 rounded focus:ring-2 focus:ring-blue-500">
+            {CRIME_TYPES.map(c => (
+              <option key={c.value} value={c.value}>{c.label}</option>
+            ))}
+          </select>
+        </div>
+        {realLoading && <div className="text-slate-400">Loading...</div>}
+        {realError && <div className="text-red-400">{realError}</div>}
+        {!realLoading && !realError && realData.length > 0 && (
+          <div className="overflow-x-auto max-h-96 mt-2">
+            <table className="min-w-full border border-slate-700 text-xs">
+              <thead>
+                <tr>
+                  {Object.keys(realData[0]).map((k) => (
+                    <th key={k} className="border border-slate-700 px-2 py-1 bg-slate-800 text-slate-300 sticky top-0 z-20">{k}</th>
+                  ))}
+                </tr>
+              </thead>
+              <tbody>
+                {realData.map((row, i) => (
+                  <tr key={i} className={i % 2 === 0 ? "bg-slate-900/60" : "bg-slate-800/60"}>
+                    {Object.values(row).map((v, j) => (
+                      <td key={j} className="border border-slate-700 px-2 py-1 text-slate-100">{String(v)}</td>
+                    ))}
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+        {!realLoading && !realError && realData.length === 0 && <div className="text-slate-400">No data found.</div>}
+      </div>
       <Card className="bg-blue-600/10 backdrop-blur-sm border-blue-300/30">
         <CardHeader>
           <div className="flex items-center space-x-2">
@@ -131,9 +200,7 @@ const TrendAnalysis = () => {
           </div>
         </CardContent>
       </Card>
-
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Trend Chart */}
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardHeader>
             <CardTitle className="text-white">Contemporary Legal Issues Trends</CardTitle>
@@ -191,8 +258,6 @@ const TrendAnalysis = () => {
             </ResponsiveContainer>
           </CardContent>
         </Card>
-
-        {/* Case Distribution */}
         <Card className="bg-white/10 backdrop-blur-sm border-white/20">
           <CardHeader>
             <CardTitle className="text-white">Current Legal Issues Distribution</CardTitle>
@@ -229,8 +294,6 @@ const TrendAnalysis = () => {
           </CardContent>
         </Card>
       </div>
-
-      {/* Contemporary Legal Issues */}
       <Card className="bg-white/10 backdrop-blur-sm border-white/20">
         <CardHeader>
           <CardTitle className="text-white">Emerging Societal Legal Challenges 2024</CardTitle>
@@ -289,8 +352,6 @@ const TrendAnalysis = () => {
           </div>
         </CardContent>
       </Card>
-
-      {/* Society Impact Metrics */}
       <Card className="bg-gradient-to-r from-purple-500/20 to-blue-500/20 backdrop-blur-sm border-purple-300/30">
         <CardHeader>
           <CardTitle className="text-white">Societal Impact Metrics</CardTitle>
@@ -322,5 +383,4 @@ const TrendAnalysis = () => {
     </div>
   );
 };
-
 export default TrendAnalysis;

@@ -91,25 +91,26 @@ const LegalChatbot = () => {
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     }]);
 
+
     try {
-      const res = await fetch('http://localhost:9000/chatbot', {
+      const res = await fetch('/chatbot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ query: inputMessage })
+        body: JSON.stringify({ question: inputMessage })
       });
       const data = await res.json();
       setMessages(prev => [
-        ...prev.slice(0, -1), // remove loading
+        ...prev.slice(0, -1),
         {
           id: prev.length,
           type: 'bot',
-          content: data.response || 'No response from server.',
+          content: data.answer || data.error || 'No response from server.',
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
     } catch (err) {
       setMessages(prev => [
-        ...prev.slice(0, -1), // remove loading
+        ...prev.slice(0, -1),
         {
           id: prev.length,
           type: 'bot',
